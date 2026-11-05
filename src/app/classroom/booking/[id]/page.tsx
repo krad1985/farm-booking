@@ -2,6 +2,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { BOOKING_STATUS_LABELS } from "@/lib/constants";
+import QRCode from "qrcode";
 import { BackButton, StatusBadge } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,9 @@ export default async function ClassroomBookingDetailPage({ params }: { params: P
   const role = (session.user as any).role;
   const classroomId = (session.user as any).classroomId;
   if (role !== "SYSTEM_ADMIN" && classroomId !== booking.classroomId) redirect("/dashboard");
+
+  const checkinUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/checkin/${booking.id}`;
+  const qrDataUrl = await QRCode.toDataURL(checkinUrl, { width: 200, margin: 2 });
 
   return (
     <div className="mx-auto max-w-6xl p-6">
@@ -70,7 +74,25 @@ export default async function ClassroomBookingDetailPage({ params }: { params: P
             🔗 開啟報名連結
           </a>
         )}
+        <a
+          href={`/checkin/${id}`}
+          className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 transition"
+        >
+          ✅ 簽到管理
+        </a>
         <span className="self-center text-sm text-gray-500">共 {booking.registrations.length} 筆報名</span>
+      </div>
+
+      {/* QR Code for check-in */}
+      <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
+        <h3 className="mb-2 text-sm font-semibold text-gray-700">簽到 QR Code</h3>
+        <div className="flex items-center gap-4">
+          <img src={qrDataUrl} alt="簽到 QR Code" className="h-32 w-32" />
+          <div className="text-sm text-gray-600">
+            <p>掃描此 QR Code 進入簽到頁面</p>
+            <p className="mt-1 text-xs text-gray-400">或直接訪問：/checkin/{id}</p>
+          </div>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -81,6 +103,7 @@ export default async function ClassroomBookingDetailPage({ params }: { params: P
               <th className="px-4 py-2 text-left">學員代號</th>
               <th className="px-4 py-2 text-left">電話</th>
               <th className="px-4 py-2 text-left">狀態</th>
+              <th className="px-4 py-2 text-left">簽到</th>
               <th className="px-4 py-2 text-left">提交時間</th>
             </tr>
           </thead>
@@ -93,6 +116,7 @@ export default async function ClassroomBookingDetailPage({ params }: { params: P
                   <td className="px-4 py-2">{r.student?.studentCode || "-"}</td>
                   <td className="px-4 py-2">{r.student?.phone || d.phone || "-"}</td>
                   <td className="px-4 py-2"><StatusBadge status={r.status} /></td>
+                  <td className="px-4 py-2">{r.checkedIn ? "✅ 已簽到" : "—"}</td>
                   <td className="px-4 py-2">{new Date(r.submittedAt).toLocaleString("zh-TW")}</td>
                 </tr>
               );

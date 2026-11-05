@@ -213,6 +213,8 @@ model Registration {
   submittedById String?  // user who submitted (could be classroom admin on behalf)
   formData      String   @default("{}") // JSON
   status        String   @default("SUBMITTED") // DRAFT | SUBMITTED | CONFIRMED | PAID | CANCELLED
+  checkedIn     Boolean  @default(false)
+  checkedInAt   DateTime?
   submittedAt   DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

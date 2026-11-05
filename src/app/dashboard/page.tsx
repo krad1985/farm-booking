@@ -21,6 +21,7 @@ export default async function DashboardPage() {
 
   const cards = [
     { href: "/venues", label: "場地與時段", desc: "查看可預約時段", icon: "🏔️" },
+    { href: "/stats", label: "統計儀表板", desc: "查看利用率、報名率、簽到率", icon: "📊" },
   ];
   if (role === "SYSTEM_ADMIN" || role === "RESERVATION_MANAGER") {
     cards.push({ href: "/admin", label: "系統管理", desc: "使用者、場地、範本管理", icon: "⚙️" });
