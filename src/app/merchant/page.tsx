@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ITINERARY_LABELS } from "@/lib/constants";
 
+export const dynamic = "force-dynamic";
+
 export default async function MerchantPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");

@@ -2,6 +2,8 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function StudentPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");

@@ -2,6 +2,8 @@
 import { redirect } from "next/navigation";
 import { ROLE_LABELS } from "@/lib/constants";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");

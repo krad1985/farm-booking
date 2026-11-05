@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { BOOKING_STATUS_LABELS } from "@/lib/constants";
 
+export const dynamic = "force-dynamic";
+
 
 export default async function ClassroomBookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
