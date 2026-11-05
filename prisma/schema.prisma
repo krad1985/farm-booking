@@ -1,0 +1,237 @@
+// This is your Prisma schema file.
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+//
+// NOTE: Provider is "sqlite" for local dev (zero setup).
+// For production (Vercel + Postgres), change provider to "postgresql"
+// and set DATABASE_URL to a Postgres connection string.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS (stored as String for SQLite/Postgres compatibility)
+// ============================================================
+
+// Role: SYSTEM_ADMIN | MERCHANT_ADMIN | RESERVATION_MANAGER | CLASSROOM_ADMIN | STUDENT
+// BookingStatus: DRAFT | PENDING | CONFIRMED | REGISTRATION_OPEN | FINALIZED | CANCELLED
+// SlotStatus: OPEN | FULL | CLOSED
+// RegistrationStatus: DRAFT | SUBMITTED | CONFIRMED | PAID | CANCELLED
+// ChoiceMode: EXCLUSIVE | CUMULATIVE
+// ItineraryType: FULL_DAY | HALF_AM_LUNCH | HALF_PM_DINNER
+
+// ============================================================
+// CORE ENTITIES
+// ============================================================
+
+model User {
+  id            String   @id @default(cuid())
+  email         String?  @unique
+  phone         String?  @unique
+  name          String?
+  passwordHash  String?
+  role          String   @default("STUDENT")
+  // scope: which venue/classroom this user manages (nullable for system admin)
+  venueId       String?
+  classroomId   String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  venue         Venue?      @relation("VenueAdmins", fields: [venueId], references: [id])
+  classroom     Classroom?  @relation("ClassroomAdmins", fields: [classroomId], references: [id])
+  registrations Registration[]
+  auditLogs     AuditLog[]
+  bookingsCreated Booking[] @relation("BookingCreator")
+}
+
+model Venue {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  intro       String?  // markdown
+  photos      String   @default("[]") // JSON array of URLs
+  facilities  String?  // markdown
+  contact     String?  // JSON: {phone, email, address}
+  transportNote String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  admins      User[]           @relation("VenueAdmins")
+  itineraryTemplates ItineraryTemplate[]
+  slots       Slot[]
+}
+
+model ItineraryTemplate {
+  id            String   @id @default(cuid())
+  venueId       String
+  type          String   // FULL_DAY | HALF_AM_LUNCH | HALF_PM_DINNER
+  title         String
+  description   String?  // markdown
+  schedule      String   @default("[]") // JSON array of {time, activity}
+  price         Float    @default(0)
+  meal          String?  // meal description
+  transportNote String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  venue         Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  slots         Slot[]
+}
+
+model Slot {
+  id                  String   @id @default(cuid())
+  venueId             String
+  itineraryTemplateId String
+  date                DateTime
+  capacity            Int      @default(120)
+  bookedCount         Int      @default(0)
+  mergeOpen           Boolean  @default(false)
+  status              String   @default("OPEN") // OPEN | FULL | CLOSED
+  notes               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  venue               Venue             @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  itineraryTemplate   ItineraryTemplate @relation(fields: [itineraryTemplateId], references: [id])
+  bookings            Booking[]
+
+  @@index([venueId, date])
+}
+
+model TrainingSystem {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  classrooms Classroom[]
+}
+
+model Classroom {
+  id              String   @id @default(cuid())
+  trainingSystemId String
+  name            String
+  adminId         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  trainingSystem  TrainingSystem @relation(fields: [trainingSystemId], references: [id], onDelete: Cascade)
+  admins          User[]         @relation("ClassroomAdmins")
+  students        Student[]
+  bookings        Booking[]
+  choiceSets      ChoiceSet[]
+  formTemplates   FormTemplate[]
+}
+
+model Student {
+  id          String   @id @default(cuid())
+  classroomId String
+  studentCode String
+  name        String
+  phone       String?
+  email       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  registrations Registration[]
+
+  @@unique([classroomId, studentCode])
+}
+
+model ChoiceSet {
+  id          String   @id @default(cuid())
+  classroomId String
+  name        String
+  mode        String   @default("EXCLUSIVE") // EXCLUSIVE | CUMULATIVE
+  deadline    DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  bookings    Booking[]
+}
+
+model Booking {
+  id                String   @id @default(cuid())
+  classroomId       String
+  slotId            String
+  choiceSetId       String?
+  estimatedHeadcount Int     @default(0)
+  finalHeadcount    Int?
+  status            String   @default("PENDING") // DRAFT | PENDING | CONFIRMED | REGISTRATION_OPEN | FINALIZED | CANCELLED
+  registrationLink  String?  @unique
+  registrationOpen  Boolean  @default(false)
+  registrationDeadline DateTime?
+  // per-booking overrides
+  overridePrice     Float?
+  overrideFormTemplateId String?
+  notes             String?
+  createdBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  classroom         Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  slot              Slot      @relation(fields: [slotId], references: [id])
+  choiceSet         ChoiceSet? @relation(fields: [choiceSetId], references: [id])
+  formTemplate      FormTemplate? @relation(fields: [overrideFormTemplateId], references: [id])
+  registrations     Registration[]
+  creator           User?     @relation("BookingCreator", fields: [createdBy], references: [id])
+
+  @@index([classroomId])
+  @@index([slotId])
+}
+
+model FormTemplate {
+  id          String   @id @default(cuid())
+  scope       String   @default("CLASSROOM") // SYSTEM | VENUE | CLASSROOM | BOOKING
+  venueId     String?
+  classroomId String?
+  name        String
+  description String?
+  fields      String   @default("[]") // JSON array of field definitions
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  classroom   Classroom? @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  bookings    Booking[]
+}
+
+model Registration {
+  id            String   @id @default(cuid())
+  bookingId     String
+  studentId     String?
+  submittedById String?  // user who submitted (could be classroom admin on behalf)
+  formData      String   @default("{}") // JSON
+  status        String   @default("SUBMITTED") // DRAFT | SUBMITTED | CONFIRMED | PAID | CANCELLED
+  submittedAt   DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  student       Student? @relation(fields: [studentId], references: [id])
+  submittedBy   User?    @relation(fields: [submittedById], references: [id])
+
+  @@index([bookingId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  target    String?  // e.g. "Booking:abc123"
+  details   String?  // JSON
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+}
