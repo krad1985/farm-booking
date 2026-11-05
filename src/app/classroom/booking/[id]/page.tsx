@@ -2,9 +2,9 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { BOOKING_STATUS_LABELS } from "@/lib/constants";
+import { BackButton, StatusBadge } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
-
 
 export default async function ClassroomBookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -26,18 +26,50 @@ export default async function ClassroomBookingDetailPage({ params }: { params: P
 
   return (
     <div className="mx-auto max-w-6xl p-6">
-      <h1 className="mb-2 text-3xl font-bold">報名詳情</h1>
-      <p className="mb-6 text-gray-600">
-        {booking.slot.venue.name} · {new Date(booking.slot.date).toLocaleString("zh-TW")} · {BOOKING_STATUS_LABELS[booking.status]}
-      </p>
+      <BackButton href="/classroom" label="返回教室管理" />
+
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">報名詳情</h1>
+        <p className="mt-1 text-gray-600">
+          {booking.slot.venue.name} · {new Date(booking.slot.date).toLocaleString("zh-TW")}
+        </p>
+        <div className="mt-2">
+          <StatusBadge status={booking.status} />
+        </div>
+      </div>
+
+      {/* Summary card */}
+      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <div className="text-sm text-gray-500">行程</div>
+          <div className="font-semibold">{booking.slot.itineraryTemplate.title}</div>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <div className="text-sm text-gray-500">預估人數</div>
+          <div className="font-semibold">{booking.estimatedHeadcount} 人</div>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <div className="text-sm text-gray-500">已報名</div>
+          <div className="font-semibold">{booking.registrations.length} 人</div>
+        </div>
+      </div>
 
       <div className="mb-4 flex gap-3">
         <a
           href={`/api/export?bookingId=${id}&type=students`}
-          className="rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700"
+          className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition"
         >
-          匯出名單 (CSV)
+          📥 匯出名單 (CSV)
         </a>
+        {booking.registrationLink && (
+          <a
+            href={`/register/${booking.registrationLink}`}
+            target="_blank"
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+          >
+            🔗 開啟報名連結
+          </a>
+        )}
         <span className="self-center text-sm text-gray-500">共 {booking.registrations.length} 筆報名</span>
       </div>
 
@@ -56,11 +88,11 @@ export default async function ClassroomBookingDetailPage({ params }: { params: P
             {booking.registrations.map((r) => {
               const d = JSON.parse(r.formData || "{}");
               return (
-                <tr key={r.id} className="border-t border-gray-100">
+                <tr key={r.id} className="border-t border-gray-100 hover:bg-gray-50">
                   <td className="px-4 py-2">{r.student?.name || d.name || "-"}</td>
                   <td className="px-4 py-2">{r.student?.studentCode || "-"}</td>
                   <td className="px-4 py-2">{r.student?.phone || d.phone || "-"}</td>
-                  <td className="px-4 py-2">{r.status}</td>
+                  <td className="px-4 py-2"><StatusBadge status={r.status} /></td>
                   <td className="px-4 py-2">{new Date(r.submittedAt).toLocaleString("zh-TW")}</td>
                 </tr>
               );

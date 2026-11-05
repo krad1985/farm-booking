@@ -54,7 +54,8 @@ model Venue {
   id          String   @id @default(cuid())
   name        String
   slug        String   @unique
-  intro       String?  // markdown
+  intro       String?  // markdown - 基本介紹
+  featureIntro String? // markdown - 場地特色介紹（商家可編輯，顯示在報名頁）
   photos      String   @default("[]") // JSON array of URLs
   facilities  String?  // markdown
   contact     String?  // JSON: {phone, email, address}
