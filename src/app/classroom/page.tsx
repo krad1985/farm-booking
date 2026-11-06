@@ -28,9 +28,14 @@ export default async function ClassroomPage() {
       <BackButton href="/dashboard" label="返回儀表板" />
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold">教室管理</h1>
-        <a href="/classroom/new-booking" className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 transition">
-          + 新增預約請求
-        </a>
+        <div className="flex gap-2">
+          <a href="/classroom/import-students" className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+            📋 匯入學員
+          </a>
+          <a href="/classroom/new-booking" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition">
+            + 新增預約請求
+          </a>
+        </div>
       </div>
 
       {bookings.length === 0 ? (
