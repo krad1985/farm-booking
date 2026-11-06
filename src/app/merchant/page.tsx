@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ITINERARY_LABELS } from "@/lib/constants";
 import { MerchantFeatureIntroEditor } from "@/components/merchant-feature-intro-editor";
+import { BookingApprovalButtons } from "@/components/booking-approval";
 import { BackButton, EmptyState } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +35,34 @@ export default async function MerchantPage() {
     <div className="mx-auto max-w-6xl p-6">
       <BackButton href="/dashboard" label="返回儀表板" />
       <h1 className="mb-2 text-3xl font-bold">{venue.name} · 商家管理</h1>
+
+      {/* Pending bookings approval */}
+      {(() => {
+        const pendingBookings = venue.slots.flatMap((s: any) =>
+          s.bookings.filter((b: any) => b.status === "PENDING").map((b: any) => ({ ...b, slot: s }))
+        );
+        if (pendingBookings.length === 0) return null;
+        return (
+          <section className="mb-8">
+            <h2 className="mb-3 text-xl font-semibold text-amber-700">⏳ 待審核預約 ({pendingBookings.length})</h2>
+            <div className="space-y-3">
+              {pendingBookings.map((b: any) => (
+                <div key={b.id} className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{b.slot.itineraryTemplate.title} · {b.classroom?.name}</div>
+                      <div className="text-sm text-gray-600">
+                        {new Date(b.slot.date).toLocaleString("zh-TW")} · 預估 {b.estimatedHeadcount} 人
+                      </div>
+                    </div>
+                    <BookingApprovalButtons bookingId={b.id} onDone={() => window.location.reload()} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+      })()}
       <div className="mb-4">
         <a href="/merchant/slots" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
           📅 時段管理
