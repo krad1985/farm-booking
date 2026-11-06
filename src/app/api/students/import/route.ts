@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -32,6 +33,7 @@ export async function POST(req: Request) {
     try {
       const existing = await prisma.student.findUnique({
         where: { classroomId_studentCode: { classroomId: cid, studentCode } },
+        include: { user: true },
       });
       if (existing) {
         await prisma.student.update({
@@ -42,10 +44,29 @@ export async function POST(req: Request) {
             email: email || existing.email,
           },
         });
+        // Update linked user
+        if (existing.user) {
+          await prisma.user.update({
+            where: { id: existing.user.id },
+            data: { name, phone: phone || existing.phone, classroomId: cid },
+          });
+        }
         updated++;
       } else {
-        await prisma.student.create({
+        const student = await prisma.student.create({
           data: { classroomId: cid, studentCode, name, phone, email },
+        });
+        // Create user account for student (default password = phone or studentCode)
+        const passwordHash = await bcrypt.hash(phone || studentCode, 10);
+        await prisma.user.create({
+          data: {
+            phone: phone || null,
+            name,
+            passwordHash,
+            role: "STUDENT",
+            classroomId: cid,
+            studentId: student.id,
+          },
         });
         created++;
       }

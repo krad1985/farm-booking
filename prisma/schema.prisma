@@ -39,12 +39,14 @@ model User {
   // scope: which venue/classroom this user manages (nullable for system admin)
   venueId       String?
   classroomId   String?
+  studentId     String?  @unique
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   venue         Venue?      @relation("VenueAdmins", fields: [venueId], references: [id])
   classroom     Classroom?  @relation("ClassroomAdmins", fields: [classroomId], references: [id])
+  student       Student?    @relation(fields: [studentId], references: [id])
   registrations Registration[]
   auditLogs     AuditLog[]
   bookingsCreated Booking[] @relation("BookingCreator")
@@ -142,6 +144,7 @@ model Student {
   updatedAt   DateTime @updatedAt
 
   classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  user        User?
   registrations Registration[]
 
   @@unique([classroomId, studentCode])

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { BOOKING_STATUS_LABELS } from "@/lib/constants";
 import QRCode from "qrcode";
+import { RegistrationManager } from "@/components/registration-manager";
 import { BackButton, StatusBadge } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -95,38 +96,7 @@ export default async function ClassroomBookingDetailPage({ params }: { params: P
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-2 text-left">姓名</th>
-              <th className="px-4 py-2 text-left">學員代號</th>
-              <th className="px-4 py-2 text-left">電話</th>
-              <th className="px-4 py-2 text-left">狀態</th>
-              <th className="px-4 py-2 text-left">簽到</th>
-              <th className="px-4 py-2 text-left">提交時間</th>
-            </tr>
-          </thead>
-          <tbody>
-            {booking.registrations.map((r) => {
-              const d = JSON.parse(r.formData || "{}");
-              return (
-                <tr key={r.id} className="border-t border-gray-100 hover:bg-gray-50">
-                  <td className="px-4 py-2">{r.student?.name || d.name || "-"}</td>
-                  <td className="px-4 py-2">{r.student?.studentCode || "-"}</td>
-                  <td className="px-4 py-2">{r.student?.phone || d.phone || "-"}</td>
-                  <td className="px-4 py-2"><StatusBadge status={r.status} /></td>
-                  <td className="px-4 py-2">{r.checkedIn ? "✅ 已簽到" : "—"}</td>
-                  <td className="px-4 py-2">{new Date(r.submittedAt).toLocaleString("zh-TW")}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        {booking.registrations.length === 0 && (
-          <p className="p-4 text-center text-gray-400">尚無報名資料</p>
-        )}
-      </div>
+      <RegistrationManager registrations={booking.registrations} onRefresh={() => window.location.reload()} />
     </div>
   );
 }

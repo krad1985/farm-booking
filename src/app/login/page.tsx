@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,7 +16,7 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     const res = await signIn("credentials", {
-      email,
+      account,
       password,
       redirect: false,
     });
@@ -39,13 +39,13 @@ export default function LoginPage() {
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Email</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700">帳號（Email / 學員代號 / 電話）</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={account}
+              onChange={(e) => setAccount(e.target.value)}
               required
-              placeholder="your@email.com"
+              placeholder="Email、學員代號或電話"
               className="w-full rounded-lg border border-gray-300 px-3 py-2.5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>

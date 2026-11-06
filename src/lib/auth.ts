@@ -8,16 +8,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Credentials({
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        account: { label: "帳號", type: "text" },
+        password: { label: "密碼", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
-        const user = await prisma.user.findUnique({
-          where: { email: String(credentials.email) },
-        });
+        if (!credentials?.account || !credentials?.password) return null;
+        const account = String(credentials.account).trim();
+        const password = String(credentials.password);
+
+        // 1. Try find by email
+        let user = await prisma.user.findUnique({ where: { email: account } });
+
+        // 2. Try find by phone
+        if (!user) {
+          user = await prisma.user.findFirst({ where: { phone: account } });
+        }
+
+        // 3. Try find by student code
+        if (!user) {
+          const student = await prisma.student.findFirst({ where: { studentCode: account }, include: { user: true } });
+          if (student?.user) {
+            user = student.user;
+          }
+        }
+
         if (!user || !user.passwordHash || !user.isActive) return null;
-        const valid = await bcrypt.compare(String(credentials.password), user.passwordHash);
+        const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;
         return {
           id: user.id,
