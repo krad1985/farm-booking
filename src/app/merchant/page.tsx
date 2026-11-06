@@ -34,6 +34,11 @@ export default async function MerchantPage() {
     <div className="mx-auto max-w-6xl p-6">
       <BackButton href="/dashboard" label="返回儀表板" />
       <h1 className="mb-2 text-3xl font-bold">{venue.name} · 商家管理</h1>
+      <div className="mb-4">
+        <a href="/merchant/slots" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+          📅 時段管理
+        </a>
+      </div>
       <p className="mb-2 text-gray-600">{venue.intro}</p>
 
       {/* Merchant-editable feature intro */}
